@@ -9,11 +9,6 @@ type Runner interface {
 	Run() error
 }
 
-// Abortable is an interface for a runner which can be aborted
-type Abortable interface {
-	Abort()
-}
-
 // Interface is the interface of a Foreman, useful for testing
 type Interface interface {
 	Start(selectors ...string) error
@@ -21,19 +16,24 @@ type Interface interface {
 	AbortAll()
 	Status() map[string]string
 	Register(name string, runner Runner) error
+
+	Subscribe(chan<- Done)
 }
 
 // Foreman is a control structure to manage multiple runners
 type Foreman struct {
-	runners map[string]*runnerState
-	mu      sync.RWMutex
+	runners     map[string]*runnerState
+	subscribers []chan<- Done
+
+	mu sync.RWMutex
 }
 
 // New builds a Foreman for use
 func New() *Foreman {
 	return &Foreman{
-		runners: map[string]*runnerState{},
-		mu:      sync.RWMutex{},
+		runners:     map[string]*runnerState{},
+		subscribers: []chan<- Done{},
+		mu:          sync.RWMutex{},
 	}
 }
 
@@ -113,7 +113,7 @@ func (f *Foreman) Register(name string, runner Runner) error {
 		return &ErrRunnerAlreadyRegistered{name}
 	}
 
-	state := newRunnerState(name, runner)
+	state := newRunnerState(name, runner, f)
 	f.runners[name] = state
 	return nil
 }

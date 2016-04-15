@@ -8,15 +8,17 @@ type runnerState struct {
 	Runner  Runner
 	Status  string
 	Aborted bool
+	Foreman *Foreman
 }
 
 // newRunnerState builds a runner state with the specified name and runner
-func newRunnerState(name string, runner Runner) *runnerState {
+func newRunnerState(name string, runner Runner, foreman *Foreman) *runnerState {
 	return &runnerState{
 		Name:    name,
 		Runner:  runner,
 		Status:  "idle",
 		Aborted: false,
+		Foreman: foreman,
 	}
 }
 
@@ -37,6 +39,7 @@ func (r *runnerState) Start() error {
 		} else {
 			r.Status = "idle"
 		}
+		r.Foreman.broadcastDone(Done{r.Name, err})
 	}()
 	return nil
 }
@@ -49,6 +52,7 @@ func (r *runnerState) Abort() error {
 	if asAbortable, isAbortable := r.Runner.(Abortable); isAbortable {
 		r.Aborted = true
 		asAbortable.Abort()
+		return nil
 	}
 	return &ErrNotAbortable{r.Name}
 }
