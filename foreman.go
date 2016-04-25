@@ -117,3 +117,9 @@ func (f *Foreman) Register(name string, runner Runner) error {
 	f.runners[name] = state
 	return nil
 }
+
+// RegisterAbortable registers an Abortable Runner with the foreman
+// It is identical to Register but provides compiler type checking
+func (f *Foreman) RegisterAbortable(name string, abortable Abortable) error {
+	return f.Register(name, abortable)
+}
